@@ -1,29 +1,31 @@
 import csv
-import requests
-from fuzzywuzzy import fuzz
 from collections import defaultdict
+from fuzzywuzzy import fuzz
+import requests
 
-# Constants
 OMDB_API_KEY = "50569543"
 OMDB_BASE_URL = "http://www.omdbapi.com/"
+
 
 def load_movies(file_path):
     """Loads movie data from a CSV file into a list of dictionaries."""
     movies = []
     try:
-        with open(file_path, 'r', encoding='utf-8-sig') as file:
-            csv_reader = csv.DictReader(file)
-            for row in csv_reader:
+        with open(file_path, "r", encoding="utf-8-sig") as file:
+            for row in csv.DictReader(file):
                 try:
-                    row['year'] = int(row['year'])
+                    row["year"] = int(row["year"])
                 except (ValueError, TypeError):
                     pass
-                
-                row['genre'] = row['genre'].split(' | ') if row.get('genre') else []
+
+                row["genre"] = (
+                    row["genre"].split(" | ") if row.get("genre") else []
+                )
                 movies.append(row)
     except FileNotFoundError:
         print(f"Error: File {file_path} not found.")
     return movies
+
 
 def print_movie_results(results, header="Results"):
     """Helper to print formatted movie results."""
@@ -33,27 +35,34 @@ def print_movie_results(results, header="Results"):
 
     print(f"\n{header}:\n")
     for score, movie in results:
-        genre_str = ', '.join(movie['genre'])
-        rating = movie.get('imdb_rating', 'N/A')
-        print(f"{movie['title']}, Director: {movie['director']}, Year: {movie['year']}, Genre: {genre_str}, IMDB Rating: {rating}")
+        genre_str = ", ".join(movie["genre"])
+        rating = movie.get("imdb_rating", "N/A")
+        print(
+            f"{movie['title']}, Director: {movie['director']}, Year: {movie['year']}, Genre: {genre_str}, IMDB Rating: {rating}"
+        )
+
 
 def get_imdb_rating(title):
     """Retrieves IMDB rating for a given movie title."""
-    params = {'t': title, 'apikey': OMDB_API_KEY}
     try:
-        response = requests.get(OMDB_BASE_URL, params=params, timeout=5)
+        response = requests.get(
+            OMDB_BASE_URL,
+            params={"t": title, "apikey": OMDB_API_KEY},
+            timeout=5,
+        )
         if response.status_code == 200:
-            data = response.json()
-            rating = data.get('imdbRating')
-            return float(rating) if rating and rating != 'N/A' else None
+            rating = response.json().get("imdbRating")
+            return float(rating) if rating and rating != "N/A" else None
     except (requests.RequestException, ValueError):
         pass
     return None
 
+
 def fetch_imdb_ratings(results):
     """Updates movie dictionaries in results with IMDB ratings."""
     for _, movie in results:
-        movie['imdb_rating'] = get_imdb_rating(movie['title'])
+        movie["imdb_rating"] = get_imdb_rating(movie["title"])
+
 
 def perform_search(query, movies):
     """Performs movie search based on user query terms using exact and fuzzy matching."""
@@ -63,44 +72,49 @@ def perform_search(query, movies):
     for movie in movies:
         match_count = 0
         for part in query_parts:
-            if ':' in part:
-                field, value = part.split(':', 1)
+            if ":" in part:
+                field, value = part.split(":", 1)
                 if value.startswith('"') and value.endswith('"'):
                     value = value[1:-1]
-                
+
                 if field in movie and str(movie[field]).lower() == value.lower():
                     match_count += 1
             else:
-                # Fuzzy matching on title
-                if fuzz.partial_ratio(part.lower(), movie['title'].lower()) >= 70:
+                if (
+                    fuzz.partial_ratio(part.lower(), movie["title"].lower())
+                    >= 70
+                ):
                     match_count += 1
 
         if match_count > 0:
             results.append((match_count, movie))
 
-    # Sort by match score descending
     results.sort(key=lambda x: x[0], reverse=True)
     return results
 
+
 def filter_by_rating(results, min_rating):
     """Filters search results based on minimum IMDB rating."""
-    filtered = [(score, movie) for score, movie in results 
-                if movie.get('imdb_rating') and movie['imdb_rating'] >= min_rating]
+    filtered = [
+        (score, movie)
+        for score, movie in results
+        if movie.get("imdb_rating") and movie["imdb_rating"] >= min_rating
+    ]
     filtered.sort(key=lambda x: x[0], reverse=True)
     return filtered
 
+
 def search(query, movies, history, cache):
-    """Processes user search queries and manages history/caching."""
+    """Processes user search queries and manages history and caching."""
     normalized_query = query.lower().strip()
 
-    if normalized_query == 'exit':
+    if normalized_query == "exit":
         return "exit"
 
-    if normalized_query == 'last':
+    if normalized_query == "last":
         if not history:
             print("No previous searches.")
         else:
-            # Flatten history for display
             all_past_results = [res for sublist in history for res in sublist]
             print_movie_results(all_past_results, "Search History")
         return "last"
@@ -111,16 +125,16 @@ def search(query, movies, history, cache):
 
     results = perform_search(query, movies)
     fetch_imdb_ratings(results)
-    
+
     cache[query] = results
     history.append(results)
-    
+
     print_movie_results(results, "Results")
     return None
 
+
 def main():
-    file_path = 'movies.csv'
-    movies = load_movies(file_path)
+    movies = load_movies("movies.csv")
     if not movies:
         print("No movie data available. Exiting.")
         return
@@ -131,15 +145,17 @@ def main():
     print("Welcome to Jetflix Movie Search Engine!")
 
     while True:
-        query = input("\nEnter your search terms ('exit' to quit, 'last' to see previous searches): ")
+        query = input(
+            "\nEnter your search terms ('exit' to quit, 'last' to see previous searches): "
+        )
         if not query:
             continue
-            
-        result = search(query, movies, history, cache)
-        if result == "exit":
+
+        if search(query, movies, history, cache) == "exit":
             break
 
     print("\nThank you for using Jetflix Movie Search Engine!")
+
 
 if __name__ == "__main__":
     main()
