@@ -1,3 +1,6 @@
+# main.py
+# Fuzzy Movie Search Engine
+
 import csv
 from collections import defaultdict
 from fuzzywuzzy import fuzz
@@ -7,8 +10,8 @@ OMDB_API_KEY = "50569543"
 OMDB_BASE_URL = "http://www.omdbapi.com/"
 
 
+# Loads movie data from a CSV file into a list of dictionaries.
 def load_movies(file_path):
-    """Loads movie data from a CSV file into a list of dictionaries."""
     movies = []
     try:
         with open(file_path, "r", encoding="utf-8-sig") as file:
@@ -27,8 +30,8 @@ def load_movies(file_path):
     return movies
 
 
+# Helper to print formatted movie results.
 def print_movie_results(results, header="Results"):
-    """Helper to print formatted movie results."""
     if not results:
         print("\nNo movies found.")
         return
@@ -42,8 +45,8 @@ def print_movie_results(results, header="Results"):
         )
 
 
+# Retrieves IMDB rating for a given movie title.
 def get_imdb_rating(title):
-    """Retrieves IMDB rating for a given movie title."""
     try:
         response = requests.get(
             OMDB_BASE_URL,
@@ -58,14 +61,14 @@ def get_imdb_rating(title):
     return None
 
 
+# Updates movie dictionaries in results with IMDB ratings.
 def fetch_imdb_ratings(results):
-    """Updates movie dictionaries in results with IMDB ratings."""
     for _, movie in results:
         movie["imdb_rating"] = get_imdb_rating(movie["title"])
 
 
+# Performs movie search based on user query terms using exact and fuzzy matching.
 def perform_search(query, movies):
-    """Performs movie search based on user query terms using exact and fuzzy matching."""
     results = []
     query_parts = query.split()
 
@@ -93,8 +96,8 @@ def perform_search(query, movies):
     return results
 
 
+# Filters search results based on minimum IMDB rating.
 def filter_by_rating(results, min_rating):
-    """Filters search results based on minimum IMDB rating."""
     filtered = [
         (score, movie)
         for score, movie in results
@@ -104,8 +107,8 @@ def filter_by_rating(results, min_rating):
     return filtered
 
 
+# Processes user search queries and manages history and caching.
 def search(query, movies, history, cache):
-    """Processes user search queries and manages history and caching."""
     normalized_query = query.lower().strip()
 
     if normalized_query == "exit":
