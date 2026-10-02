@@ -9,7 +9,6 @@ OMDB_BASE_URL = "http://www.omdbapi.com/"
 
 # loads movie data from a CSV file into a list of dictionaries
 def load_movies(file_path):
-
     movies = []
     try:
         with open(file_path, "r", encoding="utf-8-sig") as file:
@@ -30,7 +29,6 @@ def load_movies(file_path):
 
 # helper to print formatted movie results
 def print_movie_results(results, header="Results"):
-
     if not results:
         print("\nNo movies found.")
         return
@@ -46,7 +44,6 @@ def print_movie_results(results, header="Results"):
 
 # retrieves IMDB rating for a given movie title
 def get_imdb_rating(title):
-
     try:
         response = requests.get(
             OMDB_BASE_URL,
@@ -63,14 +60,12 @@ def get_imdb_rating(title):
 
 # updates movie dictionaries in results with IMDB ratings
 def fetch_imdb_ratings(results):
-
     for _, movie in results:
         movie["imdb_rating"] = get_imdb_rating(movie["title"])
 
 
 # performs movie search based on user query terms using exact and fuzzy matching
 def perform_search(query, movies):
-
     results = []
     query_parts = query.split()
 
@@ -100,11 +95,10 @@ def perform_search(query, movies):
 
 # filters search results based on minimum IMDB rating
 def filter_by_rating(results, min_rating):
-
     filtered = [
         (score, movie)
         for score, movie in results
-        if movie.get("imdb_rating") and movie["imdb_rating"] >= min_rating
+        if movie.get("imdb_rating") is not None and movie["imdb_rating"] >= min_rating
     ]
     filtered.sort(key=lambda x: x[0], reverse=True)
     return filtered
@@ -112,7 +106,6 @@ def filter_by_rating(results, min_rating):
 
 # processes user search queries and manages history and caching
 def search(query, movies, history, cache):
-
     normalized_query = query.lower().strip()
 
     if normalized_query == "exit":
