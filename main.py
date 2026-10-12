@@ -36,7 +36,10 @@ def print_movie_results(results, header="Results"):
     print(f"\n{header}:\n")
     for score, movie in results:
         genre_str = ", ".join(movie["genre"])
-        rating = movie.get("imdb_rating", "N/A")
+        # a fetched movie keeps the key but stores None when OMDb had no rating
+        rating = movie.get("imdb_rating")
+        if rating is None:
+            rating = "N/A"
         print(
             f"{movie['title']}, Director: {movie['director']}, Year: {movie['year']}, Genre: {genre_str}, IMDB Rating: {rating}"
         )
