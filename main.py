@@ -67,6 +67,21 @@ def fetch_imdb_ratings(results):
         movie["imdb_rating"] = get_imdb_rating(movie["title"])
 
 
+# returns the match count for one search term against one movie
+def part_matches(part, movie):
+    if ":" in part:
+        field, value = part.split(":", 1)
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        return field in movie and str(movie[field]).lower() == value.lower()
+    return fuzz.partial_ratio(part.lower(), movie["title"].lower()) >= 70
+
+
+# orders (score, movie) pairs with the strongest match first
+def sort_by_score(results):
+    return sorted(results, key=lambda pair: pair[0], reverse=True)
+
+
 # performs movie search based on user query terms using exact and fuzzy matching
 def perform_search(query, movies):
     results = []
@@ -75,25 +90,13 @@ def perform_search(query, movies):
     for movie in movies:
         match_count = 0
         for part in query_parts:
-            if ":" in part:
-                field, value = part.split(":", 1)
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-
-                if field in movie and str(movie[field]).lower() == value.lower():
-                    match_count += 1
-            else:
-                if (
-                    fuzz.partial_ratio(part.lower(), movie["title"].lower())
-                    >= 70
-                ):
-                    match_count += 1
+            if part_matches(part, movie):
+                match_count += 1
 
         if match_count > 0:
             results.append((match_count, movie))
 
-    results.sort(key=lambda x: x[0], reverse=True)
-    return results
+    return sort_by_score(results)
 
 
 # filters search results based on minimum IMDB rating
@@ -103,8 +106,7 @@ def filter_by_rating(results, min_rating):
         for score, movie in results
         if movie.get("imdb_rating") is not None and movie["imdb_rating"] >= min_rating
     ]
-    filtered.sort(key=lambda x: x[0], reverse=True)
-    return filtered
+    return sort_by_score(filtered)
 
 
 # processes user search queries and manages history and caching
